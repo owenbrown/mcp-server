@@ -19,22 +19,36 @@ VERYFI_API_KEY = os.getenv("VERYFI_API_KEY")
 VERYFI_API_URL = "https://api.veryfi.com/api/v8/partner/documents"
 
 
-server = FastMCP(name="veryfi-mcp")
+server = FastMCP(
+    name="veryfi-mcp",
+    instructions="""Veryfi is a service to extract data from financial documents. It is fast, accurate, and secure. Veryfi has many endpoints. The "documents" endpoint is a misnomer. It works with receipts, invoices, and purchase orders. For other document types, it's imperative to use Veryfi's other API endpoints. The following document types have endpoints with a dedicated ML model and schema:
+- bank checks
+- bank statements
+- W2s
+- W8-BEN-E
+- W9s
+- business cards""",
+)
 
 
 @server.tool(
     name="process_document",
-    description="Upload a document to Veryfi and extract data from receipts, invoices, etc.",
+    description=(
+        "Extract structured data from images of receipts, invoices, and purchase orders using Veryfi's OCR technology. "
+        "Returns JSON with vendor name, amounts, dates, line items, taxes, and other transaction details. "
+        "SUPPORTED: receipts, invoices, purchase orders. "
+        "NOT SUPPORTED: bank checks, bank statements, W2s, W8-BEN-E, W9s, business cards - users must use Veryfi API directly for these."
+    ),
 )
 async def process_document(file_path: str, document_type: str = "receipt") -> dict:
-    """Upload a document to Veryfi and extract data.
+    """Upload a document to Veryfi and extract structured data.
 
     Args:
-        file_path: Path to the document file to process
-        document_type: Type of document (default: "receipt")
+        file_path: Path to the document image file to process (JPG, PNG, PDF, etc.)
+        document_type: Type of document - "receipt", "invoice", or "purchase_order" (default: "receipt")
 
     Returns:
-        dict: Extracted data from Veryfi API
+        dict: Extracted data including vendor, total, date, line items, taxes, etc. in JSON format
     """
     # Check credentials before processing
     error_message = check_veryfi_credentials()
